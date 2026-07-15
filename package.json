@@ -1,0 +1,7 @@
+{
+  "name": "upwork-hub-digest",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": { "digest": "node src/digest.mjs" }
+}
