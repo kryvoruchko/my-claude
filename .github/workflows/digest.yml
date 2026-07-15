@@ -1,0 +1,44 @@
+name: Upwork Hub Daily Digest
+
+on:
+  schedule:
+    # 05:30 UTC = 06:30 Lisbon (summer). Adjust as needed.
+    - cron: "30 5 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run digest
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}
+        run: node src/digest.mjs
+
+      - name: Commit dedup state
+        run: |
+          git config user.name "digest-bot"
+          git config user.email "digest-bot@users.noreply.github.com"
+          if ! git diff --quiet state/covered.json; then
+            git add state/covered.json
+            git commit -m "chore: update covered topics [skip ci]"
+            git push
+          else
+            echo "No state changes."
+          fi
